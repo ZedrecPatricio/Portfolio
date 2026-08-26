@@ -2585,6 +2585,18 @@
         );
       }
     );
+
+    <input type="file" id="upload" />
+document.getElementById('upload').addEventListener('change', function(event) {
+    const file = event.target.files[0];
+    const reader = new FileReader();
+    reader.onload = function(e) {
+        const img = new Image();
+        img.src = e.target.result;
+        document.body.appendChild(img); // I-display ang image
+    };
+    reader.readAsDataURL(file);
+});
   </script>
 
 </body>
