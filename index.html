@@ -773,34 +773,31 @@
     const HOME_STORAGE_KEY =
       "portfolio_home_data";
 
-    async function getHomeData() {
+    function getHomeData() {
+      const saved =
+        localStorage.getItem(
+          HOME_STORAGE_KEY
+        );
+
+      if (!saved) {
+        return null;
+      }
+
       try {
-        const result =
-          await window.storage.get(HOME_STORAGE_KEY, false);
-
-        if (!result) {
-          return null;
-        }
-
-        return JSON.parse(result.value);
+        return JSON.parse(saved);
       } catch (error) {
         return null;
       }
     }
 
-    async function saveHomeData(data) {
-      try {
-        await window.storage.set(
-          HOME_STORAGE_KEY,
-          JSON.stringify(data),
-          false
-        );
-      } catch (error) {
-        console.error("Storage error:", error);
-      }
+    function saveHomeData(data) {
+      localStorage.setItem(
+        HOME_STORAGE_KEY,
+        JSON.stringify(data)
+      );
     }
 
-    async function saveHomeImage(file) {
+    function saveHomeImage(file) {
       if (!file) {
         return;
       }
@@ -809,9 +806,9 @@
         new FileReader();
 
       reader.onload =
-        async function(e) {
+        function(e) {
           const existingData =
-            (await getHomeData()) || {
+            getHomeData() || {
               name: "",
               section: "",
               details: "",
@@ -821,7 +818,7 @@
           existingData.image =
             e.target.result;
 
-          await saveHomeData(
+          saveHomeData(
             existingData
           );
         };
@@ -842,7 +839,7 @@
         );
       });
 
-    async function showOutput() {
+    function showOutput() {
       const name =
         document
           .getElementById("nameInput")
@@ -884,7 +881,7 @@
       `;
 
       const currentHomeData =
-        (await getHomeData()) || {};
+        getHomeData() || {};
 
       const outputHTML = `
         <h2>${nameHTML}</h2>
@@ -904,7 +901,7 @@
         </button>
       `;
 
-      await saveHomeData({
+      saveHomeData({
         name: name,
         section: section,
         details: details,
@@ -944,12 +941,10 @@
         .style.display = "none";
     }
 
-    async function removeHome() {
-      try {
-        await window.storage.delete(HOME_STORAGE_KEY, false);
-      } catch (error) {
-        console.error("Storage error:", error);
-      }
+    function removeHome() {
+      localStorage.removeItem(
+        HOME_STORAGE_KEY
+      );
 
       document.getElementById("nameInput").value = "";
       document.getElementById("sectionInput").value = "";
@@ -972,9 +967,9 @@
         .style.display = "block";
     }
 
-    async function loadHomeData() {
+    function loadHomeData() {
       const data =
-        await getHomeData();
+        getHomeData();
 
       if (!data) {
         return;
@@ -1105,34 +1100,28 @@
       return "portfolio_" + type + "_data";
     }
 
-    async function getSavedData(type) {
+    function getSavedData(type) {
+      const saved =
+        localStorage.getItem(
+          getStorageKey(type)
+        );
+
+      if (!saved) {
+        return [];
+      }
+
       try {
-        const result =
-          await window.storage.get(
-            getStorageKey(type),
-            false
-          );
-
-        if (!result) {
-          return [];
-        }
-
-        return JSON.parse(result.value);
+        return JSON.parse(saved);
       } catch (error) {
         return [];
       }
     }
 
-    async function saveData(type, data) {
-      try {
-        await window.storage.set(
-          getStorageKey(type),
-          JSON.stringify(data),
-          false
-        );
-      } catch (error) {
-        console.error("Storage error:", error);
-      }
+    function saveData(type, data) {
+      localStorage.setItem(
+        getStorageKey(type),
+        JSON.stringify(data)
+      );
     }
 
     function getBlockType(block) {
@@ -1288,7 +1277,7 @@
       return null;
     }
 
-    async function saveCurrentBlock(block) {
+    function saveCurrentBlock(block) {
       const type =
         getBlockType(block);
 
@@ -1353,7 +1342,7 @@
       }
 
       const savedData =
-        await getSavedData(type);
+        getSavedData(type);
 
       const data = {
         id: block.dataset.storageId,
@@ -1385,13 +1374,13 @@
         savedData.push(data);
       }
 
-      await saveData(
+      saveData(
         type,
         savedData
       );
     }
 
-    async function saveAllBlocks(type) {
+    function saveAllBlocks(type) {
       let blocks;
 
       if (type === "quiz") {
@@ -1492,7 +1481,7 @@
         });
       });
 
-      await saveData(
+      saveData(
         type,
         data
       );
@@ -1940,9 +1929,9 @@
       return newBlock;
     }
 
-    async function loadSavedBlocks(type) {
+    function loadSavedBlocks(type) {
       const savedData =
-        await getSavedData(type);
+        getSavedData(type);
 
       if (!savedData.length) {
         return;
@@ -2078,8 +2067,8 @@
       );
     }
 
-    async function addQuizImage(button) {
-      await saveAllBlocks("quiz");
+    function addQuizImage(button) {
+      saveAllBlocks("quiz");
 
       const newBlock =
         createQuizBlock({
@@ -2096,7 +2085,7 @@
           submitted: false
         });
 
-      await saveAllBlocks("quiz");
+      saveAllBlocks("quiz");
 
       newBlock.scrollIntoView({
         behavior: "smooth",
@@ -2104,7 +2093,7 @@
       });
     }
 
-    async function removeQuiz(button) {
+    function removeQuiz(button) {
       const block =
         button.closest(".quiz-block");
 
@@ -2142,27 +2131,22 @@
           ".quizOutputArea"
         ).style.display = "none";
 
-        try {
-          await window.storage.delete(
-            getStorageKey("quiz"),
-            false
-          );
-        } catch (error) {
-          console.error("Storage error:", error);
-        }
+        localStorage.removeItem(
+          getStorageKey("quiz")
+        );
       } else {
         const id =
           block.dataset.storageId;
 
         const savedData =
-          await getSavedData("quiz");
+          getSavedData("quiz");
 
         const newData =
           savedData.filter(
             item => item.id !== id
           );
 
-        await saveData(
+        saveData(
           "quiz",
           newData
         );
@@ -2259,8 +2243,8 @@
       );
     }
 
-    async function addLaboratoryImage(button) {
-      await saveAllBlocks(
+    function addLaboratoryImage(button) {
+      saveAllBlocks(
         "laboratory"
       );
 
@@ -2279,7 +2263,7 @@
           submitted: false
         });
 
-      await saveAllBlocks(
+      saveAllBlocks(
         "laboratory"
       );
 
@@ -2289,7 +2273,7 @@
       });
     }
 
-    async function removeLaboratory(button) {
+    function removeLaboratory(button) {
       const block =
         button.closest(
           ".laboratory-block"
@@ -2329,20 +2313,17 @@
           ".laboratoryOutputArea"
         ).style.display = "none";
 
-        try {
-          await window.storage.delete(
-            getStorageKey("laboratory"),
-            false
-          );
-        } catch (error) {
-          console.error("Storage error:", error);
-        }
+        localStorage.removeItem(
+          getStorageKey(
+            "laboratory"
+          )
+        );
       } else {
         const id =
           block.dataset.storageId;
 
         const savedData =
-          await getSavedData(
+          getSavedData(
             "laboratory"
           );
 
@@ -2351,7 +2332,7 @@
             item => item.id !== id
           );
 
-        await saveData(
+        saveData(
           "laboratory",
           newData
         );
@@ -2446,8 +2427,8 @@
       );
     }
 
-    async function addExamImage(button) {
-      await saveAllBlocks("exam");
+    function addExamImage(button) {
+      saveAllBlocks("exam");
 
       const newBlock =
         createExamBlock({
@@ -2464,7 +2445,7 @@
           submitted: false
         });
 
-      await saveAllBlocks("exam");
+      saveAllBlocks("exam");
 
       newBlock.scrollIntoView({
         behavior: "smooth",
@@ -2472,7 +2453,7 @@
       });
     }
 
-    async function removeExam(button) {
+    function removeExam(button) {
       const block =
         button.closest(
           ".exam-block"
@@ -2512,27 +2493,22 @@
           ".examOutputArea"
         ).style.display = "none";
 
-        try {
-          await window.storage.delete(
-            getStorageKey("exam"),
-            false
-          );
-        } catch (error) {
-          console.error("Storage error:", error);
-        }
+        localStorage.removeItem(
+          getStorageKey("exam")
+        );
       } else {
         const id =
           block.dataset.storageId;
 
         const savedData =
-          await getSavedData("exam");
+          getSavedData("exam");
 
         const newData =
           savedData.filter(
             item => item.id !== id
           );
 
-        await saveData(
+        saveData(
           "exam",
           newData
         );
@@ -2593,18 +2569,18 @@
 
     window.addEventListener(
       "load",
-      async function() {
-        await loadHomeData();
+      function() {
+        loadHomeData();
 
-        await loadSavedBlocks(
+        loadSavedBlocks(
           "quiz"
         );
 
-        await loadSavedBlocks(
+        loadSavedBlocks(
           "laboratory"
         );
 
-        await loadSavedBlocks(
+        loadSavedBlocks(
           "exam"
         );
       }
