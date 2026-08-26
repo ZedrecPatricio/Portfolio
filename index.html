@@ -549,6 +549,17 @@
               <div
                 class="image-frame quizImagePreview">
               </div>
+
+              <input
+                type="file"
+                class="quizFileInput"
+                style="margin-top: 10px;"
+              >
+
+              <div
+                class="quizFilePreview"
+                style="font-size: 13px; word-break: break-all;">
+              </div>
             </div>
 
             <div class="right">
@@ -596,6 +607,17 @@
               <div
                 class="image-frame laboratoryImagePreview">
               </div>
+
+              <input
+                type="file"
+                class="laboratoryFileInput"
+                style="margin-top: 10px;"
+              >
+
+              <div
+                class="laboratoryFilePreview"
+                style="font-size: 13px; word-break: break-all;">
+              </div>
             </div>
 
             <div class="right">
@@ -642,6 +664,17 @@
 
               <div
                 class="image-frame examImagePreview">
+              </div>
+
+              <input
+                type="file"
+                class="examFileInput"
+                style="margin-top: 10px;"
+              >
+
+              <div
+                class="examFilePreview"
+                style="font-size: 13px; word-break: break-all;">
               </div>
             </div>
 
@@ -710,6 +743,31 @@
 
       preview.innerHTML =
         `<img src="${imageURL}" alt="Uploaded Image">`;
+    }
+
+    function showFile(input, preview, block) {
+      const file = input.files[0];
+
+      if (!file) {
+        return;
+      }
+
+      const reader =
+        new FileReader();
+
+      reader.onload =
+        function(e) {
+          preview.innerHTML =
+            `<a href="${e.target.result}" download="${escapeHTML(file.name)}">${escapeHTML(file.name)}</a>`;
+
+          if (block) {
+            saveCurrentBlock(
+              block
+            );
+          }
+        };
+
+      reader.readAsDataURL(file);
     }
 
     const HOME_STORAGE_KEY =
@@ -1011,6 +1069,33 @@
       );
     }
 
+    function bindFileInput(
+      block,
+      inputClass,
+      previewClass
+    ) {
+      const fileInput =
+        block.querySelector(inputClass);
+
+      const filePreview =
+        block.querySelector(previewClass);
+
+      if (!fileInput || !filePreview) {
+        return;
+      }
+
+      fileInput.addEventListener(
+        "change",
+        function() {
+          showFile(
+            fileInput,
+            filePreview,
+            block
+          );
+        }
+      );
+    }
+
     function getStorageKey(type) {
       return "portfolio_" + type + "_data";
     }
@@ -1117,6 +1202,31 @@
       return null;
     }
 
+    function getFilePreview(block) {
+      const type =
+        getBlockType(block);
+
+      if (type === "quiz") {
+        return block.querySelector(
+          ".quizFilePreview"
+        );
+      }
+
+      if (type === "laboratory") {
+        return block.querySelector(
+          ".laboratoryFilePreview"
+        );
+      }
+
+      if (type === "exam") {
+        return block.querySelector(
+          ".examFilePreview"
+        );
+      }
+
+      return null;
+    }
+
     function getOutputArea(block) {
       const type =
         getBlockType(block);
@@ -1181,6 +1291,9 @@
       const imagePreview =
         getImagePreview(block);
 
+      const filePreview =
+        getFilePreview(block);
+
       const outputArea =
         getOutputArea(block);
 
@@ -1194,6 +1307,23 @@
           imagePreview
             .querySelector("img")
             .src;
+      }
+
+      let file = "";
+      let fileName = "";
+
+      if (
+        filePreview &&
+        filePreview.querySelector("a")
+      ) {
+        const fileLink =
+          filePreview.querySelector("a");
+
+        file =
+          fileLink.getAttribute("href");
+
+        fileName =
+          fileLink.textContent;
       }
 
       let submitted = false;
@@ -1223,6 +1353,10 @@
             : "",
 
         image: image,
+
+        file: file,
+
+        fileName: fileName,
 
         submitted: submitted
       };
@@ -1283,6 +1417,9 @@
         const imagePreview =
           getImagePreview(block);
 
+        const filePreview =
+          getFilePreview(block);
+
         const outputArea =
           getOutputArea(block);
 
@@ -1306,6 +1443,23 @@
               .src;
         }
 
+        let file = "";
+        let fileName = "";
+
+        if (
+          filePreview &&
+          filePreview.querySelector("a")
+        ) {
+          const fileLink =
+            filePreview.querySelector("a");
+
+          file =
+            fileLink.getAttribute("href");
+
+          fileName =
+            fileLink.textContent;
+        }
+
         data.push({
           id: block.dataset.storageId,
 
@@ -1315,6 +1469,10 @@
               : "",
 
           image: image,
+
+          file: file,
+
+          fileName: fileName,
 
           submitted:
             outputArea
@@ -1377,6 +1535,9 @@
       const imagePreview =
         getImagePreview(block);
 
+      const filePreview =
+        getFilePreview(block);
+
       const formArea =
         getFormArea(block);
 
@@ -1397,6 +1558,14 @@
       ) {
         imagePreview.innerHTML =
           `<img src="${data.image}" alt="Uploaded Image">`;
+      }
+
+      if (
+        data.file &&
+        filePreview
+      ) {
+        filePreview.innerHTML =
+          `<a href="${data.file}" download="${escapeHTML(data.fileName || "file")}">${escapeHTML(data.fileName || "file")}</a>`;
       }
 
       if (
@@ -1522,6 +1691,17 @@
             <div
               class="image-frame quizImagePreview">
             </div>
+
+            <input
+              type="file"
+              class="quizFileInput"
+              style="margin-top: 10px;"
+            >
+
+            <div
+              class="quizFilePreview"
+              style="font-size: 13px; word-break: break-all;">
+            </div>
           </div>
 
           <div class="right">
@@ -1561,6 +1741,12 @@
         ".quizImagePreview"
       );
 
+      bindFileInput(
+        newBlock,
+        ".quizFileInput",
+        ".quizFilePreview"
+      );
+
       if (data) {
         restoreBlock(
           newBlock,
@@ -1590,6 +1776,17 @@
 
             <div
               class="image-frame laboratoryImagePreview">
+            </div>
+
+            <input
+              type="file"
+              class="laboratoryFileInput"
+              style="margin-top: 10px;"
+            >
+
+            <div
+              class="laboratoryFilePreview"
+              style="font-size: 13px; word-break: break-all;">
             </div>
           </div>
 
@@ -1630,6 +1827,12 @@
         ".laboratoryImagePreview"
       );
 
+      bindFileInput(
+        newBlock,
+        ".laboratoryFileInput",
+        ".laboratoryFilePreview"
+      );
+
       if (data) {
         restoreBlock(
           newBlock,
@@ -1659,6 +1862,17 @@
 
             <div
               class="image-frame examImagePreview">
+            </div>
+
+            <input
+              type="file"
+              class="examFileInput"
+              style="margin-top: 10px;"
+            >
+
+            <div
+              class="examFilePreview"
+              style="font-size: 13px; word-break: break-all;">
             </div>
           </div>
 
@@ -1697,6 +1911,12 @@
         newBlock,
         ".examImageInput",
         ".examImagePreview"
+      );
+
+      bindFileInput(
+        newBlock,
+        ".examFileInput",
+        ".examFilePreview"
       );
 
       if (data) {
@@ -1896,6 +2116,14 @@
         ).innerHTML = "";
 
         block.querySelector(
+          ".quizFileInput"
+        ).value = "";
+
+        block.querySelector(
+          ".quizFilePreview"
+        ).innerHTML = "";
+
+        block.querySelector(
           ".quizFormArea"
         ).style.display = "block";
 
@@ -2067,6 +2295,14 @@
 
         block.querySelector(
           ".laboratoryImagePreview"
+        ).innerHTML = "";
+
+        block.querySelector(
+          ".laboratoryFileInput"
+        ).value = "";
+
+        block.querySelector(
+          ".laboratoryFilePreview"
         ).innerHTML = "";
 
         block.querySelector(
@@ -2242,6 +2478,14 @@
         ).innerHTML = "";
 
         block.querySelector(
+          ".examFileInput"
+        ).value = "";
+
+        block.querySelector(
+          ".examFilePreview"
+        ).innerHTML = "";
+
+        block.querySelector(
           ".examFormArea"
         ).style.display = "block";
 
@@ -2281,6 +2525,12 @@
           ".quizImageInput",
           ".quizImagePreview"
         );
+
+        bindFileInput(
+          block,
+          ".quizFileInput",
+          ".quizFilePreview"
+        );
       });
 
     document
@@ -2293,6 +2543,12 @@
           ".laboratoryImageInput",
           ".laboratoryImagePreview"
         );
+
+        bindFileInput(
+          block,
+          ".laboratoryFileInput",
+          ".laboratoryFilePreview"
+        );
       });
 
     document
@@ -2302,6 +2558,12 @@
           block,
           ".examImageInput",
           ".examImagePreview"
+        );
+
+        bindFileInput(
+          block,
+          ".examFileInput",
+          ".examFilePreview"
         );
       });
 
