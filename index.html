@@ -773,31 +773,34 @@
     const HOME_STORAGE_KEY =
       "portfolio_home_data";
 
-    function getHomeData() {
-      const saved =
-        localStorage.getItem(
-          HOME_STORAGE_KEY
-        );
-
-      if (!saved) {
-        return null;
-      }
-
+    async function getHomeData() {
       try {
-        return JSON.parse(saved);
+        const result =
+          await window.storage.get(HOME_STORAGE_KEY, false);
+
+        if (!result) {
+          return null;
+        }
+
+        return JSON.parse(result.value);
       } catch (error) {
         return null;
       }
     }
 
-    function saveHomeData(data) {
-      localStorage.setItem(
-        HOME_STORAGE_KEY,
-        JSON.stringify(data)
-      );
+    async function saveHomeData(data) {
+      try {
+        await window.storage.set(
+          HOME_STORAGE_KEY,
+          JSON.stringify(data),
+          false
+        );
+      } catch (error) {
+        console.error("Storage error:", error);
+      }
     }
 
-    function saveHomeImage(file) {
+    async function saveHomeImage(file) {
       if (!file) {
         return;
       }
@@ -806,9 +809,9 @@
         new FileReader();
 
       reader.onload =
-        function(e) {
+        async function(e) {
           const existingData =
-            getHomeData() || {
+            (await getHomeData()) || {
               name: "",
               section: "",
               details: "",
@@ -818,7 +821,7 @@
           existingData.image =
             e.target.result;
 
-          saveHomeData(
+          await saveHomeData(
             existingData
           );
         };
@@ -839,7 +842,7 @@
         );
       });
 
-    function showOutput() {
+    async function showOutput() {
       const name =
         document
           .getElementById("nameInput")
@@ -881,7 +884,7 @@
       `;
 
       const currentHomeData =
-        getHomeData() || {};
+        (await getHomeData()) || {};
 
       const outputHTML = `
         <h2>${nameHTML}</h2>
@@ -901,7 +904,7 @@
         </button>
       `;
 
-      saveHomeData({
+      await saveHomeData({
         name: name,
         section: section,
         details: details,
@@ -941,10 +944,12 @@
         .style.display = "none";
     }
 
-    function removeHome() {
-      localStorage.removeItem(
-        HOME_STORAGE_KEY
-      );
+    async function removeHome() {
+      try {
+        await window.storage.delete(HOME_STORAGE_KEY, false);
+      } catch (error) {
+        console.error("Storage error:", error);
+      }
 
       document.getElementById("nameInput").value = "";
       document.getElementById("sectionInput").value = "";
@@ -967,9 +972,9 @@
         .style.display = "block";
     }
 
-    function loadHomeData() {
+    async function loadHomeData() {
       const data =
-        getHomeData();
+        await getHomeData();
 
       if (!data) {
         return;
@@ -1100,28 +1105,34 @@
       return "portfolio_" + type + "_data";
     }
 
-    function getSavedData(type) {
-      const saved =
-        localStorage.getItem(
-          getStorageKey(type)
-        );
-
-      if (!saved) {
-        return [];
-      }
-
+    async function getSavedData(type) {
       try {
-        return JSON.parse(saved);
+        const result =
+          await window.storage.get(
+            getStorageKey(type),
+            false
+          );
+
+        if (!result) {
+          return [];
+        }
+
+        return JSON.parse(result.value);
       } catch (error) {
         return [];
       }
     }
 
-    function saveData(type, data) {
-      localStorage.setItem(
-        getStorageKey(type),
-        JSON.stringify(data)
-      );
+    async function saveData(type, data) {
+      try {
+        await window.storage.set(
+          getStorageKey(type),
+          JSON.stringify(data),
+          false
+        );
+      } catch (error) {
+        console.error("Storage error:", error);
+      }
     }
 
     function getBlockType(block) {
@@ -1277,7 +1288,7 @@
       return null;
     }
 
-    function saveCurrentBlock(block) {
+    async function saveCurrentBlock(block) {
       const type =
         getBlockType(block);
 
@@ -1342,7 +1353,7 @@
       }
 
       const savedData =
-        getSavedData(type);
+        await getSavedData(type);
 
       const data = {
         id: block.dataset.storageId,
@@ -1374,13 +1385,13 @@
         savedData.push(data);
       }
 
-      saveData(
+      await saveData(
         type,
         savedData
       );
     }
 
-    function saveAllBlocks(type) {
+    async function saveAllBlocks(type) {
       let blocks;
 
       if (type === "quiz") {
@@ -1481,7 +1492,7 @@
         });
       });
 
-      saveData(
+      await saveData(
         type,
         data
       );
@@ -1929,9 +1940,9 @@
       return newBlock;
     }
 
-    function loadSavedBlocks(type) {
+    async function loadSavedBlocks(type) {
       const savedData =
-        getSavedData(type);
+        await getSavedData(type);
 
       if (!savedData.length) {
         return;
@@ -2067,8 +2078,8 @@
       );
     }
 
-    function addQuizImage(button) {
-      saveAllBlocks("quiz");
+    async function addQuizImage(button) {
+      await saveAllBlocks("quiz");
 
       const newBlock =
         createQuizBlock({
@@ -2085,7 +2096,7 @@
           submitted: false
         });
 
-      saveAllBlocks("quiz");
+      await saveAllBlocks("quiz");
 
       newBlock.scrollIntoView({
         behavior: "smooth",
@@ -2093,7 +2104,7 @@
       });
     }
 
-    function removeQuiz(button) {
+    async function removeQuiz(button) {
       const block =
         button.closest(".quiz-block");
 
@@ -2131,22 +2142,27 @@
           ".quizOutputArea"
         ).style.display = "none";
 
-        localStorage.removeItem(
-          getStorageKey("quiz")
-        );
+        try {
+          await window.storage.delete(
+            getStorageKey("quiz"),
+            false
+          );
+        } catch (error) {
+          console.error("Storage error:", error);
+        }
       } else {
         const id =
           block.dataset.storageId;
 
         const savedData =
-          getSavedData("quiz");
+          await getSavedData("quiz");
 
         const newData =
           savedData.filter(
             item => item.id !== id
           );
 
-        saveData(
+        await saveData(
           "quiz",
           newData
         );
@@ -2243,8 +2259,8 @@
       );
     }
 
-    function addLaboratoryImage(button) {
-      saveAllBlocks(
+    async function addLaboratoryImage(button) {
+      await saveAllBlocks(
         "laboratory"
       );
 
@@ -2263,7 +2279,7 @@
           submitted: false
         });
 
-      saveAllBlocks(
+      await saveAllBlocks(
         "laboratory"
       );
 
@@ -2273,7 +2289,7 @@
       });
     }
 
-    function removeLaboratory(button) {
+    async function removeLaboratory(button) {
       const block =
         button.closest(
           ".laboratory-block"
@@ -2313,17 +2329,20 @@
           ".laboratoryOutputArea"
         ).style.display = "none";
 
-        localStorage.removeItem(
-          getStorageKey(
-            "laboratory"
-          )
-        );
+        try {
+          await window.storage.delete(
+            getStorageKey("laboratory"),
+            false
+          );
+        } catch (error) {
+          console.error("Storage error:", error);
+        }
       } else {
         const id =
           block.dataset.storageId;
 
         const savedData =
-          getSavedData(
+          await getSavedData(
             "laboratory"
           );
 
@@ -2332,7 +2351,7 @@
             item => item.id !== id
           );
 
-        saveData(
+        await saveData(
           "laboratory",
           newData
         );
@@ -2427,8 +2446,8 @@
       );
     }
 
-    function addExamImage(button) {
-      saveAllBlocks("exam");
+    async function addExamImage(button) {
+      await saveAllBlocks("exam");
 
       const newBlock =
         createExamBlock({
@@ -2445,7 +2464,7 @@
           submitted: false
         });
 
-      saveAllBlocks("exam");
+      await saveAllBlocks("exam");
 
       newBlock.scrollIntoView({
         behavior: "smooth",
@@ -2453,7 +2472,7 @@
       });
     }
 
-    function removeExam(button) {
+    async function removeExam(button) {
       const block =
         button.closest(
           ".exam-block"
@@ -2493,22 +2512,27 @@
           ".examOutputArea"
         ).style.display = "none";
 
-        localStorage.removeItem(
-          getStorageKey("exam")
-        );
+        try {
+          await window.storage.delete(
+            getStorageKey("exam"),
+            false
+          );
+        } catch (error) {
+          console.error("Storage error:", error);
+        }
       } else {
         const id =
           block.dataset.storageId;
 
         const savedData =
-          getSavedData("exam");
+          await getSavedData("exam");
 
         const newData =
           savedData.filter(
             item => item.id !== id
           );
 
-        saveData(
+        await saveData(
           "exam",
           newData
         );
@@ -2569,18 +2593,2633 @@
 
     window.addEventListener(
       "load",
-      function() {
-        loadHomeData();
+      async function() {
+        await loadHomeData();
 
-        loadSavedBlocks(
+        await loadSavedBlocks(
           "quiz"
         );
 
-        loadSavedBlocks(
+        await loadSavedBlocks(
           "laboratory"
         );
 
-        loadSavedBlocks(
+        await loadSavedBlocks(
+          "exam"
+        );
+      }
+    );
+  </script>
+
+</body>
+</html>
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Portfolio</title>
+
+  <style>
+    * {
+      box-sizing: border-box;
+    }
+
+    html {
+      scroll-behavior: smooth;
+    }
+
+    body {
+      font-family: Arial, sans-serif;
+      margin: 0;
+      min-height: 100vh;
+      color: #ffffff;
+      background:
+        linear-gradient(
+          rgba(0, 0, 0, 0.68),
+          rgba(0, 0, 0, 0.68)
+        ),
+        url("background.jpg");
+      background-size: cover;
+      background-position: center;
+      background-repeat: no-repeat;
+      background-attachment: fixed;
+      display: flex;
+      flex-direction: column;
+    }
+
+    header {
+      position: sticky;
+      top: 0;
+      z-index: 1000;
+      width: 100%;
+      background: rgba(5, 5, 5, 0.9);
+      backdrop-filter: blur(10px);
+      -webkit-backdrop-filter: blur(10px);
+      padding: 15px 30px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.15);
+      box-shadow: 0 4px 20px rgba(0, 0, 0, 0.35);
+    }
+
+    .logo {
+      font-size: 21px;
+      font-weight: bold;
+      letter-spacing: 1px;
+    }
+
+    .nav {
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+      justify-content: flex-end;
+    }
+
+    .nav button {
+      background: transparent;
+      color: #ffffff;
+      border: none;
+      border-radius: 8px;
+      padding: 9px 14px;
+      margin: 0;
+      font-size: 14px;
+      font-weight: bold;
+      cursor: pointer;
+      transition:
+        background 0.2s ease,
+        color 0.2s ease,
+        transform 0.2s ease;
+    }
+
+    .nav button:hover {
+      background: rgba(229, 36, 32, 0.15);
+      color: #e52420;
+      transform: translateY(-1px);
+    }
+
+    .content {
+      flex: 1;
+      width: 100%;
+      padding: 30px;
+      background: transparent;
+    }
+
+    .section {
+      display: none;
+      width: 100%;
+      max-width: 1400px;
+      margin: 0 auto;
+    }
+
+    .section.active {
+      display: block;
+    }
+
+    h1 {
+      margin-top: 0;
+      margin-bottom: 20px;
+      color: #ffffff;
+      font-size: 28px;
+      text-shadow: 0 2px 10px rgba(0, 0, 0, 0.8);
+    }
+
+    h2 {
+      color: #ffffff;
+      margin-top: 0;
+    }
+
+    .portfolio {
+      display: flex;
+      justify-content: center;
+      align-items: stretch;
+      width: 100%;
+      padding: 0;
+    }
+
+    .container {
+      display: flex;
+      width: 100%;
+      background: rgba(18, 18, 18, 0.88);
+      backdrop-filter: blur(8px);
+      -webkit-backdrop-filter: blur(8px);
+      overflow: hidden;
+      border-radius: 12px;
+      border: 1px solid rgba(255, 255, 255, 0.12);
+      box-shadow: 0 15px 40px rgba(0, 0, 0, 0.45);
+    }
+
+    .left {
+      flex: 1;
+      max-width: 25%;
+      min-width: 230px;
+      display: flex;
+      flex-direction: column;
+      justify-content: flex-start;
+      align-items: stretch;
+      padding: 20px;
+      background: rgba(0, 0, 0, 0.2);
+    }
+
+    .right {
+      flex: 3;
+      display: flex;
+      flex-direction: column;
+      justify-content: flex-start;
+      padding: 30px;
+    }
+
+    #fileArea {
+      margin-bottom: 10px;
+    }
+
+    .image-frame {
+      width: 100%;
+      min-height: 300px;
+      border: 2px solid rgba(255, 255, 255, 0.85);
+      border-radius: 8px;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      overflow: hidden;
+      background: rgba(0, 0, 0, 0.55);
+    }
+
+    .image-frame img {
+      width: 100%;
+      height: 100%;
+      min-height: 220px;
+      object-fit: cover;
+      display: block;
+    }
+
+    .form-group {
+      margin-bottom: 20px;
+    }
+
+    label {
+      display: block;
+      margin-bottom: 6px;
+      font-weight: bold;
+      font-size: 13px;
+      color: #ffffff;
+    }
+
+    input[type="text"],
+    textarea,
+    .quizGrade,
+    .laboratoryGrade,
+    .examGrade {
+      width: 60%;
+      padding: 10px 12px;
+      border: 1px solid #444;
+      border-radius: 6px;
+      font-size: 13px;
+      background: #ffffff;
+      color: #000000;
+      transition:
+        border 0.2s ease,
+        box-shadow 0.2s ease;
+    }
+
+    input[type="text"]:focus,
+    textarea:focus,
+    .quizGrade:focus,
+    .laboratoryGrade:focus,
+    .examGrade:focus {
+      outline: none;
+      border-color: #e52420;
+      box-shadow: 0 0 0 3px rgba(229, 36, 32, 0.15);
+    }
+
+    textarea {
+      resize: vertical;
+      height: 100px;
+      min-height: 80px;
+    }
+
+    input[type="file"] {
+      width: 100%;
+      margin-bottom: 8px;
+      color: transparent;
+    }
+
+    input[type="file"]::file-selector-button {
+      background: #e52420;
+      color: #ffffff;
+      padding: 8px 14px;
+      border: none;
+      border-radius: 6px;
+      cursor: pointer;
+      font-size: 13px;
+      transition: background 0.2s ease;
+    }
+
+    input[type="file"]::file-selector-button:hover {
+      background: #b91c19;
+    }
+
+    button {
+      background: #e52420;
+      color: #ffffff;
+      padding: 8px 16px;
+      border: none;
+      border-radius: 15px;
+      cursor: pointer;
+      margin-top: 10px;
+      font-size: 13px;
+      transition:
+        background 0.2s ease,
+        transform 0.2s ease,
+        box-shadow 0.2s ease;
+    }
+
+    button:hover {
+      background: #b91c19;
+      transform: translateY(-1px);
+      box-shadow: 0 5px 12px rgba(229, 36, 32, 0.25);
+    }
+
+    button:active {
+      transform: translateY(0);
+    }
+
+    .output {
+      margin-top: 20px;
+      padding: 18px;
+      background: rgba(20, 20, 20, 0.92);
+      border: 1px solid rgba(255, 255, 255, 0.12);
+      border-radius: 8px;
+      white-space: pre-wrap;
+      word-wrap: break-word;
+      overflow-wrap: break-word;
+      font-size: 16px;
+      color: #ffffff;
+      box-shadow: 0 10px 25px rgba(0, 0, 0, 0.25);
+    }
+
+    .output h2 {
+      margin: 0 0 8px 0;
+    }
+
+    .home-output {
+      font-family: "Times New Roman", Times, serif;
+      font-size: 18px;
+      white-space: normal;
+    }
+
+    .home-output h2 {
+      font-family: "Times New Roman", Times, serif;
+      font-size: 25px;
+      line-height: 1;
+      margin: 0 0 5px 0;
+    }
+
+    .home-output .output-line {
+      display: block;
+      margin: 0;
+      padding: 0;
+      line-height: 1.15;
+    }
+
+    .home-output .output-label {
+      display: inline-block;
+      width: 78px;
+      font-weight: bold;
+    }
+
+    .home-output .output-value {
+      display: inline;
+    }
+
+    .home-output .details-value {
+      display: inline;
+      white-space: pre-wrap;
+    }
+
+    .surname {
+      color: #e52420;
+      white-space: nowrap;
+    }
+
+    .output-action {
+      display: inline-block;
+      min-width: 0;
+      width: auto;
+      height: auto;
+      padding: 6px 10px;
+      margin-top: 6px;
+      margin-right: 3px;
+      border-radius: 10px;
+      font-size: 11px;
+      line-height: 1.2;
+      text-align: center;
+      vertical-align: middle;
+      white-space: nowrap;
+      box-shadow: none;
+    }
+
+    .output-action:hover {
+      transform: translateY(-1px);
+      box-shadow: 0 3px 7px rgba(229, 36, 32, 0.2);
+    }
+
+    .quiz-block,
+    .laboratory-block,
+    .exam-block {
+      margin-bottom: 20px;
+    }
+
+    .quiz-block + .quiz-block,
+    .laboratory-block + .laboratory-block,
+    .exam-block + .exam-block {
+      margin-top: 20px;
+    }
+
+    @media (max-width: 800px) {
+      header {
+        padding: 15px;
+        flex-direction: column;
+        gap: 12px;
+      }
+
+      .nav {
+        justify-content: center;
+      }
+
+      .content {
+        padding: 15px;
+      }
+
+      .container {
+        flex-direction: column;
+      }
+
+      .left {
+        max-width: 100%;
+        min-width: 0;
+      }
+
+      .right {
+        padding: 20px;
+      }
+
+      input[type="text"],
+      textarea,
+      .quizGrade,
+      .laboratoryGrade,
+      .examGrade {
+        width: 100%;
+      }
+
+      .image-frame {
+        min-height: 250px;
+      }
+
+      .image-frame img {
+        min-height: 250px;
+      }
+    }
+
+    @media (max-width: 500px) {
+      .logo {
+        font-size: 18px;
+      }
+
+      .nav {
+        gap: 3px;
+      }
+
+      .nav button {
+        padding: 7px 8px;
+        font-size: 11px;
+      }
+
+      h1 {
+        font-size: 23px;
+      }
+
+      .right {
+        padding: 15px;
+      }
+
+      .left {
+        padding: 15px;
+      }
+
+      .home-output {
+        font-size: 16px;
+      }
+
+      .home-output h2 {
+        font-size: 22px;
+      }
+
+      .home-output .output-label {
+        width: 68px;
+      }
+
+      .output-action {
+        min-width: 0;
+        width: auto;
+        height: auto;
+        padding: 6px 9px;
+        font-size: 10px;
+        white-space: nowrap;
+      }
+    }
+  </style>
+</head>
+
+<body style="background-image: url(image.png); background-size: cover; background-position: center; height: 100vh;">
+
+  <header>
+    <div class="logo">Portfolio</div>
+
+    <div class="nav">
+      <button onclick="showSection('home')">HOME</button>
+      <button onclick="showSection('quiz')">QUIZ</button>
+      <button onclick="showSection('laboratory')">LABORATORY</button>
+      <button onclick="showSection('exam')">EXAM</button>
+    </div>
+  </header>
+
+  <div class="content">
+
+    <div id="home" class="section active">
+      <div class="portfolio">
+        <div class="container">
+
+          <div class="left">
+            <div id="fileArea">
+              <input
+                type="file"
+                id="imageInput"
+                accept="image/*"
+              >
+            </div>
+
+            <div
+              class="image-frame"
+              id="imagePreview">
+            </div>
+          </div>
+
+          <div class="right">
+            <div id="formArea">
+
+              <div class="form-group">
+                <label for="nameInput">Name:</label>
+
+                <input
+                  type="text"
+                  id="nameInput"
+                >
+              </div>
+
+              <div class="form-group">
+                <label for="sectionInput">Section:</label>
+
+                <input
+                  type="text"
+                  id="sectionInput"
+                >
+              </div>
+
+              <div class="form-group">
+                <label for="detailsInput">Details:</label>
+
+                <textarea id="detailsInput"></textarea>
+              </div>
+
+              <button onclick="showOutput()">Submit</button>
+            </div>
+
+            <div
+              id="outputArea"
+              class="output home-output"
+              style="display: none;">
+            </div>
+          </div>
+
+        </div>
+      </div>
+    </div>
+
+    <div id="quiz" class="section">
+      <h1>QUIZ</h1>
+
+      <div id="quizBlocks">
+        <div class="portfolio quiz-block">
+          <div class="container">
+
+            <div class="left">
+              <input
+                type="file"
+                class="quizImageInput"
+                accept="image/*"
+              >
+
+              <div
+                class="image-frame quizImagePreview">
+              </div>
+
+              <input
+                type="file"
+                class="quizFileInput"
+                style="margin-top: 10px;"
+              >
+
+              <div
+                class="quizFilePreview"
+                style="font-size: 13px; word-break: break-all;">
+              </div>
+            </div>
+
+            <div class="right">
+              <div class="quizFormArea">
+
+                <div class="form-group">
+                  <label>Grade:</label>
+
+                  <input
+                    type="text"
+                    class="quizGrade"
+                  >
+                </div>
+
+                <button onclick="submitQuiz(this)">
+                  Submit
+                </button>
+              </div>
+
+              <div
+                class="quizOutputArea output"
+                style="display: none;">
+              </div>
+            </div>
+
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div id="laboratory" class="section">
+      <h1>LABORATORY</h1>
+
+      <div id="laboratoryBlocks">
+        <div class="portfolio laboratory-block">
+          <div class="container">
+
+            <div class="left">
+              <input
+                type="file"
+                class="laboratoryImageInput"
+                accept="image/*"
+              >
+
+              <div
+                class="image-frame laboratoryImagePreview">
+              </div>
+
+              <input
+                type="file"
+                class="laboratoryFileInput"
+                style="margin-top: 10px;"
+              >
+
+              <div
+                class="laboratoryFilePreview"
+                style="font-size: 13px; word-break: break-all;">
+              </div>
+            </div>
+
+            <div class="right">
+              <div class="laboratoryFormArea">
+
+                <div class="form-group">
+                  <label>Grade:</label>
+
+                  <input
+                    type="text"
+                    class="laboratoryGrade"
+                  >
+                </div>
+
+                <button onclick="submitLaboratory(this)">
+                  Submit
+                </button>
+              </div>
+
+              <div
+                class="laboratoryOutputArea output"
+                style="display: none;">
+              </div>
+            </div>
+
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div id="exam" class="section">
+      <h1>EXAM</h1>
+
+      <div id="examBlocks">
+        <div class="portfolio exam-block">
+          <div class="container">
+
+            <div class="left">
+              <input
+                type="file"
+                class="examImageInput"
+                accept="image/*"
+              >
+
+              <div
+                class="image-frame examImagePreview">
+              </div>
+
+              <input
+                type="file"
+                class="examFileInput"
+                style="margin-top: 10px;"
+              >
+
+              <div
+                class="examFilePreview"
+                style="font-size: 13px; word-break: break-all;">
+              </div>
+            </div>
+
+            <div class="right">
+              <div class="examFormArea">
+
+                <div class="form-group">
+                  <label>Grade:</label>
+
+                  <input
+                    type="text"
+                    class="examGrade"
+                  >
+                </div>
+
+                <button onclick="submitExam(this)">
+                  Submit
+                </button>
+              </div>
+
+              <div
+                class="examOutputArea output"
+                style="display: none;">
+              </div>
+            </div>
+
+          </div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+
+  <script>
+    function showSection(sectionId) {
+      document.querySelectorAll(".section").forEach(section => {
+        section.classList.remove("active");
+      });
+
+      const selectedSection =
+        document.getElementById(sectionId);
+
+      if (selectedSection) {
+        selectedSection.classList.add("active");
+      }
+    }
+
+    function escapeHTML(value) {
+      return value
+        .replace(/&/g, "&amp;")
+        .replace(/</g, "&lt;")
+        .replace(/>/g, "&gt;")
+        .replace(/"/g, "&quot;")
+        .replace(/'/g, "&#039;");
+    }
+
+    function showImage(input, preview) {
+      const file = input.files[0];
+
+      if (!file) {
+        return;
+      }
+
+      const imageURL =
+        URL.createObjectURL(file);
+
+      preview.innerHTML =
+        `<img src="${imageURL}" alt="Uploaded Image">`;
+    }
+
+    function showFile(input, preview, block) {
+      const file = input.files[0];
+
+      if (!file) {
+        return;
+      }
+
+      const reader =
+        new FileReader();
+
+      reader.onload =
+        function(e) {
+          preview.innerHTML =
+            `<a href="${e.target.result}" download="${escapeHTML(file.name)}">${escapeHTML(file.name)}</a>`;
+
+          if (block) {
+            saveCurrentBlock(
+              block
+            );
+          }
+        };
+
+      reader.readAsDataURL(file);
+    }
+
+    const HOME_STORAGE_KEY =
+      "portfolio_home_data";
+
+    async function getHomeData() {
+      try {
+        const result =
+          await window.storage.get(HOME_STORAGE_KEY, false);
+
+        if (!result) {
+          return null;
+        }
+
+        return JSON.parse(result.value);
+      } catch (error) {
+        return null;
+      }
+    }
+
+    async function saveHomeData(data) {
+      try {
+        await window.storage.set(
+          HOME_STORAGE_KEY,
+          JSON.stringify(data),
+          false
+        );
+      } catch (error) {
+        console.error("Storage error:", error);
+      }
+    }
+
+    async function saveHomeImage(file) {
+      if (!file) {
+        return;
+      }
+
+      const reader =
+        new FileReader();
+
+      reader.onload =
+        async function(e) {
+          const existingData =
+            (await getHomeData()) || {
+              name: "",
+              section: "",
+              details: "",
+              image: ""
+            };
+
+          existingData.image =
+            e.target.result;
+
+          await saveHomeData(
+            existingData
+          );
+        };
+
+      reader.readAsDataURL(file);
+    }
+
+    document
+      .getElementById("imageInput")
+      .addEventListener("change", function() {
+        showImage(
+          this,
+          document.getElementById("imagePreview")
+        );
+
+        saveHomeImage(
+          this.files[0]
+        );
+      });
+
+    async function showOutput() {
+      const name =
+        document
+          .getElementById("nameInput")
+          .value
+          .trim();
+
+      const section =
+        document
+          .getElementById("sectionInput")
+          .value
+          .trim();
+
+      const details =
+        document
+          .getElementById("detailsInput")
+          .value
+          .trim();
+
+      if (!name) {
+        alert("Please enter your name.");
+        return;
+      }
+
+      const nameParts =
+        name
+          .split(/\s+/)
+          .filter(Boolean);
+
+      const surname =
+        nameParts.pop();
+
+      const firstNames =
+        nameParts.join(" ");
+
+      const nameHTML = `
+        ${escapeHTML(firstNames)}
+        ${firstNames ? " " : ""}
+        <span class="surname">${escapeHTML(surname)}</span>
+      `;
+
+      const currentHomeData =
+        (await getHomeData()) || {};
+
+      const outputHTML = `
+        <h2>${nameHTML}</h2>
+
+        <div class="output-line">
+          <span class="output-label">Section:</span><span class="output-value">${escapeHTML(section)}</span>
+        </div>
+
+        <div class="output-line">
+          <span class="output-label">Details:</span><span class="details-value">${escapeHTML(details)}</span>
+        </div>
+
+        <button
+          class="output-action"
+          onclick="removeHome()">
+          Remove
+        </button>
+      `;
+
+      await saveHomeData({
+        name: name,
+        section: section,
+        details: details,
+        image:
+          currentHomeData.image || ""
+      });
+
+      document.getElementById("outputArea").innerHTML =
+        outputHTML;
+
+      document.getElementById("formArea")
+        .style.display = "none";
+
+      document.getElementById("outputArea")
+        .style.display = "block";
+
+      document.getElementById("fileArea")
+        .style.display = "none";
+    }
+
+    function resetForm() {
+      document.getElementById("nameInput").value = "";
+      document.getElementById("sectionInput").value = "";
+      document.getElementById("detailsInput").value = "";
+      document.getElementById("imageInput").value = "";
+
+      document.getElementById("imagePreview")
+        .innerHTML = "";
+
+      document.getElementById("fileArea")
+        .style.display = "block";
+
+      document.getElementById("formArea")
+        .style.display = "block";
+
+      document.getElementById("outputArea")
+        .style.display = "none";
+    }
+
+    async function removeHome() {
+      try {
+        await window.storage.delete(HOME_STORAGE_KEY, false);
+      } catch (error) {
+        console.error("Storage error:", error);
+      }
+
+      document.getElementById("nameInput").value = "";
+      document.getElementById("sectionInput").value = "";
+      document.getElementById("detailsInput").value = "";
+      document.getElementById("imageInput").value = "";
+
+      document.getElementById("imagePreview")
+        .innerHTML = "";
+
+      document.getElementById("outputArea")
+        .innerHTML = "";
+
+      document.getElementById("outputArea")
+        .style.display = "none";
+
+      document.getElementById("formArea")
+        .style.display = "block";
+
+      document.getElementById("fileArea")
+        .style.display = "block";
+    }
+
+    async function loadHomeData() {
+      const data =
+        await getHomeData();
+
+      if (!data) {
+        return;
+      }
+
+      document.getElementById("nameInput").value =
+        data.name || "";
+
+      document.getElementById("sectionInput").value =
+        data.section || "";
+
+      document.getElementById("detailsInput").value =
+        data.details || "";
+
+      if (data.image) {
+        document.getElementById("imagePreview").innerHTML =
+          `<img src="${data.image}" alt="Uploaded Image">`;
+      }
+
+      if (data.name) {
+        const nameParts =
+          data.name
+            .split(/\s+/)
+            .filter(Boolean);
+
+        const surname =
+          nameParts.pop();
+
+        const firstNames =
+          nameParts.join(" ");
+
+        const nameHTML = `
+          ${escapeHTML(firstNames)}
+          ${firstNames ? " " : ""}
+          <span class="surname">${escapeHTML(surname)}</span>
+        `;
+
+        const outputHTML = `
+          <h2>${nameHTML}</h2>
+
+          <div class="output-line">
+            <span class="output-label">Section:</span><span class="output-value">${escapeHTML(data.section || "")}</span>
+          </div>
+
+          <div class="output-line">
+            <span class="output-label">Details:</span><span class="details-value">${escapeHTML(data.details || "")}</span>
+          </div>
+
+          <button
+            class="output-action"
+            onclick="removeHome()">
+            Remove
+          </button>
+        `;
+
+        document.getElementById("outputArea").innerHTML =
+          outputHTML;
+
+        document.getElementById("formArea")
+          .style.display = "none";
+
+        document.getElementById("outputArea")
+          .style.display = "block";
+
+        document.getElementById("fileArea")
+          .style.display = "none";
+      }
+    }
+
+    function bindImageInput(
+      block,
+      inputClass,
+      previewClass
+    ) {
+      const imageInput =
+        block.querySelector(inputClass);
+
+      const imagePreview =
+        block.querySelector(previewClass);
+
+      if (!imageInput || !imagePreview) {
+        return;
+      }
+
+      imageInput.addEventListener(
+        "change",
+        function() {
+          showImage(
+            imageInput,
+            imagePreview
+          );
+
+          saveCurrentBlock(
+            block
+          );
+        }
+      );
+    }
+
+    function bindFileInput(
+      block,
+      inputClass,
+      previewClass
+    ) {
+      const fileInput =
+        block.querySelector(inputClass);
+
+      const filePreview =
+        block.querySelector(previewClass);
+
+      if (!fileInput || !filePreview) {
+        return;
+      }
+
+      fileInput.addEventListener(
+        "change",
+        function() {
+          showFile(
+            fileInput,
+            filePreview,
+            block
+          );
+        }
+      );
+    }
+
+    function getStorageKey(type) {
+      return "portfolio_" + type + "_data";
+    }
+
+    async function getSavedData(type) {
+      try {
+        const result =
+          await window.storage.get(
+            getStorageKey(type),
+            false
+          );
+
+        if (!result) {
+          return [];
+        }
+
+        return JSON.parse(result.value);
+      } catch (error) {
+        return [];
+      }
+    }
+
+    async function saveData(type, data) {
+      try {
+        await window.storage.set(
+          getStorageKey(type),
+          JSON.stringify(data),
+          false
+        );
+      } catch (error) {
+        console.error("Storage error:", error);
+      }
+    }
+
+    function getBlockType(block) {
+      if (
+        block.classList.contains(
+          "quiz-block"
+        )
+      ) {
+        return "quiz";
+      }
+
+      if (
+        block.classList.contains(
+          "laboratory-block"
+        )
+      ) {
+        return "laboratory";
+      }
+
+      if (
+        block.classList.contains(
+          "exam-block"
+        )
+      ) {
+        return "exam";
+      }
+
+      return "";
+    }
+
+    function getGradeInput(block) {
+      const type =
+        getBlockType(block);
+
+      if (type === "quiz") {
+        return block.querySelector(
+          ".quizGrade"
+        );
+      }
+
+      if (type === "laboratory") {
+        return block.querySelector(
+          ".laboratoryGrade"
+        );
+      }
+
+      if (type === "exam") {
+        return block.querySelector(
+          ".examGrade"
+        );
+      }
+
+      return null;
+    }
+
+    function getImagePreview(block) {
+      const type =
+        getBlockType(block);
+
+      if (type === "quiz") {
+        return block.querySelector(
+          ".quizImagePreview"
+        );
+      }
+
+      if (type === "laboratory") {
+        return block.querySelector(
+          ".laboratoryImagePreview"
+        );
+      }
+
+      if (type === "exam") {
+        return block.querySelector(
+          ".examImagePreview"
+        );
+      }
+
+      return null;
+    }
+
+    function getFilePreview(block) {
+      const type =
+        getBlockType(block);
+
+      if (type === "quiz") {
+        return block.querySelector(
+          ".quizFilePreview"
+        );
+      }
+
+      if (type === "laboratory") {
+        return block.querySelector(
+          ".laboratoryFilePreview"
+        );
+      }
+
+      if (type === "exam") {
+        return block.querySelector(
+          ".examFilePreview"
+        );
+      }
+
+      return null;
+    }
+
+    function getOutputArea(block) {
+      const type =
+        getBlockType(block);
+
+      if (type === "quiz") {
+        return block.querySelector(
+          ".quizOutputArea"
+        );
+      }
+
+      if (type === "laboratory") {
+        return block.querySelector(
+          ".laboratoryOutputArea"
+        );
+      }
+
+      if (type === "exam") {
+        return block.querySelector(
+          ".examOutputArea"
+        );
+      }
+
+      return null;
+    }
+
+    function getFormArea(block) {
+      const type =
+        getBlockType(block);
+
+      if (type === "quiz") {
+        return block.querySelector(
+          ".quizFormArea"
+        );
+      }
+
+      if (type === "laboratory") {
+        return block.querySelector(
+          ".laboratoryFormArea"
+        );
+      }
+
+      if (type === "exam") {
+        return block.querySelector(
+          ".examFormArea"
+        );
+      }
+
+      return null;
+    }
+
+    async function saveCurrentBlock(block) {
+      const type =
+        getBlockType(block);
+
+      if (!type) {
+        return;
+      }
+
+      const gradeInput =
+        getGradeInput(block);
+
+      const imagePreview =
+        getImagePreview(block);
+
+      const filePreview =
+        getFilePreview(block);
+
+      const outputArea =
+        getOutputArea(block);
+
+      let image = "";
+
+      if (
+        imagePreview &&
+        imagePreview.querySelector("img")
+      ) {
+        image =
+          imagePreview
+            .querySelector("img")
+            .src;
+      }
+
+      let file = "";
+      let fileName = "";
+
+      if (
+        filePreview &&
+        filePreview.querySelector("a")
+      ) {
+        const fileLink =
+          filePreview.querySelector("a");
+
+        file =
+          fileLink.getAttribute("href");
+
+        fileName =
+          fileLink.textContent;
+      }
+
+      let submitted = false;
+
+      if (outputArea) {
+        submitted =
+          outputArea.style.display !== "none";
+      }
+
+      if (!block.dataset.storageId) {
+        block.dataset.storageId =
+          Date.now().toString() +
+          Math.random()
+            .toString(36)
+            .substring(2);
+      }
+
+      const savedData =
+        await getSavedData(type);
+
+      const data = {
+        id: block.dataset.storageId,
+
+        grade:
+          gradeInput
+            ? gradeInput.value.trim()
+            : "",
+
+        image: image,
+
+        file: file,
+
+        fileName: fileName,
+
+        submitted: submitted
+      };
+
+      const index =
+        savedData.findIndex(
+          item =>
+            item.id ===
+            block.dataset.storageId
+        );
+
+      if (index >= 0) {
+        savedData[index] = data;
+      } else {
+        savedData.push(data);
+      }
+
+      await saveData(
+        type,
+        savedData
+      );
+    }
+
+    async function saveAllBlocks(type) {
+      let blocks;
+
+      if (type === "quiz") {
+        blocks =
+          document.querySelectorAll(
+            ".quiz-block"
+          );
+      }
+
+      if (type === "laboratory") {
+        blocks =
+          document.querySelectorAll(
+            ".laboratory-block"
+          );
+      }
+
+      if (type === "exam") {
+        blocks =
+          document.querySelectorAll(
+            ".exam-block"
+          );
+      }
+
+      if (!blocks) {
+        return;
+      }
+
+      const data = [];
+
+      blocks.forEach(function(block) {
+        const gradeInput =
+          getGradeInput(block);
+
+        const imagePreview =
+          getImagePreview(block);
+
+        const filePreview =
+          getFilePreview(block);
+
+        const outputArea =
+          getOutputArea(block);
+
+        if (!block.dataset.storageId) {
+          block.dataset.storageId =
+            Date.now().toString() +
+            Math.random()
+              .toString(36)
+              .substring(2);
+        }
+
+        let image = "";
+
+        if (
+          imagePreview &&
+          imagePreview.querySelector("img")
+        ) {
+          image =
+            imagePreview
+              .querySelector("img")
+              .src;
+        }
+
+        let file = "";
+        let fileName = "";
+
+        if (
+          filePreview &&
+          filePreview.querySelector("a")
+        ) {
+          const fileLink =
+            filePreview.querySelector("a");
+
+          file =
+            fileLink.getAttribute("href");
+
+          fileName =
+            fileLink.textContent;
+        }
+
+        data.push({
+          id: block.dataset.storageId,
+
+          grade:
+            gradeInput
+              ? gradeInput.value.trim()
+              : "",
+
+          image: image,
+
+          file: file,
+
+          fileName: fileName,
+
+          submitted:
+            outputArea
+              ? outputArea.style.display !== "none"
+              : false
+        });
+      });
+
+      await saveData(
+        type,
+        data
+      );
+    }
+
+    function saveImageAndBlock(
+      input,
+      block
+    ) {
+      const file =
+        input.files[0];
+
+      if (!file) {
+        return;
+      }
+
+      const reader =
+        new FileReader();
+
+      reader.onload =
+        function(e) {
+          const imageData =
+            e.target.result;
+
+          const preview =
+            getImagePreview(block);
+
+          if (preview) {
+            preview.innerHTML =
+              `<img src="${imageData}" alt="Uploaded Image">`;
+          }
+
+          saveCurrentBlock(
+            block
+          );
+        };
+
+      reader.readAsDataURL(file);
+    }
+
+    function restoreBlock(
+      block,
+      data
+    ) {
+      const type =
+        getBlockType(block);
+
+      const gradeInput =
+        getGradeInput(block);
+
+      const imagePreview =
+        getImagePreview(block);
+
+      const filePreview =
+        getFilePreview(block);
+
+      const formArea =
+        getFormArea(block);
+
+      const outputArea =
+        getOutputArea(block);
+
+      block.dataset.storageId =
+        data.id;
+
+      if (gradeInput) {
+        gradeInput.value =
+          data.grade || "";
+      }
+
+      if (
+        data.image &&
+        imagePreview
+      ) {
+        imagePreview.innerHTML =
+          `<img src="${data.image}" alt="Uploaded Image">`;
+      }
+
+      if (
+        data.file &&
+        filePreview
+      ) {
+        filePreview.innerHTML =
+          `<a href="${data.file}" download="${escapeHTML(data.fileName || "file")}">${escapeHTML(data.fileName || "file")}</a>`;
+      }
+
+      if (
+        data.submitted &&
+        outputArea &&
+        formArea
+      ) {
+        outputArea.innerHTML = `
+          <h2>Grade Output</h2>
+
+          <p>
+            Your grade:
+            <strong>${escapeHTML(data.grade || "")}</strong>
+          </p>
+
+          ${
+            type === "quiz"
+              ? `
+                <button
+                  class="output-action"
+                  onclick="editQuiz(this)">
+                  Edit Grade
+                </button>
+
+                <button
+                  class="output-action"
+                  onclick="addQuizImage(this)">
+                  Add Image
+                </button>
+
+                <button
+                  class="output-action"
+                  onclick="removeQuiz(this)">
+                  Remove
+                </button>
+              `
+              : ""
+          }
+
+          ${
+            type === "laboratory"
+              ? `
+                <button
+                  class="output-action"
+                  onclick="editLaboratory(this)">
+                  Edit Grade
+                </button>
+
+                <button
+                  class="output-action"
+                  onclick="addLaboratoryImage(this)">
+                  Add Image
+                </button>
+
+                <button
+                  class="output-action"
+                  onclick="removeLaboratory(this)">
+                  Remove
+                </button>
+              `
+              : ""
+          }
+
+          ${
+            type === "exam"
+              ? `
+                <button
+                  class="output-action"
+                  onclick="editExam(this)">
+                  Edit Grade
+                </button>
+
+                <button
+                  class="output-action"
+                  onclick="addExamImage(this)">
+                  Add Image
+                </button>
+
+                <button
+                  class="output-action"
+                  onclick="removeExam(this)">
+                  Remove
+                </button>
+              `
+              : ""
+          }
+        `;
+
+        formArea.style.display =
+          "none";
+
+        outputArea.style.display =
+          "block";
+      } else if (
+        formArea &&
+        outputArea
+      ) {
+        formArea.style.display =
+          "block";
+
+        outputArea.style.display =
+          "none";
+      }
+    }
+
+    function createQuizBlock(data) {
+      const newBlock =
+        document.createElement("div");
+
+      newBlock.className =
+        "portfolio quiz-block";
+
+      newBlock.innerHTML = `
+        <div class="container">
+
+          <div class="left">
+            <input
+              type="file"
+              class="quizImageInput"
+              accept="image/*"
+            >
+
+            <div
+              class="image-frame quizImagePreview">
+            </div>
+
+            <input
+              type="file"
+              class="quizFileInput"
+              style="margin-top: 10px;"
+            >
+
+            <div
+              class="quizFilePreview"
+              style="font-size: 13px; word-break: break-all;">
+            </div>
+          </div>
+
+          <div class="right">
+            <div class="quizFormArea">
+
+              <div class="form-group">
+                <label>Grade:</label>
+
+                <input
+                  type="text"
+                  class="quizGrade"
+                >
+              </div>
+
+              <button onclick="submitQuiz(this)">
+                Submit
+              </button>
+
+            </div>
+
+            <div
+              class="quizOutputArea output"
+              style="display: none;">
+            </div>
+          </div>
+
+        </div>
+      `;
+
+      document
+        .getElementById("quizBlocks")
+        .appendChild(newBlock);
+
+      bindImageInput(
+        newBlock,
+        ".quizImageInput",
+        ".quizImagePreview"
+      );
+
+      bindFileInput(
+        newBlock,
+        ".quizFileInput",
+        ".quizFilePreview"
+      );
+
+      if (data) {
+        restoreBlock(
+          newBlock,
+          data
+        );
+      }
+
+      return newBlock;
+    }
+
+    function createLaboratoryBlock(data) {
+      const newBlock =
+        document.createElement("div");
+
+      newBlock.className =
+        "portfolio laboratory-block";
+
+      newBlock.innerHTML = `
+        <div class="container">
+
+          <div class="left">
+            <input
+              type="file"
+              class="laboratoryImageInput"
+              accept="image/*"
+            >
+
+            <div
+              class="image-frame laboratoryImagePreview">
+            </div>
+
+            <input
+              type="file"
+              class="laboratoryFileInput"
+              style="margin-top: 10px;"
+            >
+
+            <div
+              class="laboratoryFilePreview"
+              style="font-size: 13px; word-break: break-all;">
+            </div>
+          </div>
+
+          <div class="right">
+            <div class="laboratoryFormArea">
+
+              <div class="form-group">
+                <label>Grade:</label>
+
+                <input
+                  type="text"
+                  class="laboratoryGrade"
+                >
+              </div>
+
+              <button onclick="submitLaboratory(this)">
+                Submit
+              </button>
+
+            </div>
+
+            <div
+              class="laboratoryOutputArea output"
+              style="display: none;">
+            </div>
+          </div>
+
+        </div>
+      `;
+
+      document
+        .getElementById("laboratoryBlocks")
+        .appendChild(newBlock);
+
+      bindImageInput(
+        newBlock,
+        ".laboratoryImageInput",
+        ".laboratoryImagePreview"
+      );
+
+      bindFileInput(
+        newBlock,
+        ".laboratoryFileInput",
+        ".laboratoryFilePreview"
+      );
+
+      if (data) {
+        restoreBlock(
+          newBlock,
+          data
+        );
+      }
+
+      return newBlock;
+    }
+
+    function createExamBlock(data) {
+      const newBlock =
+        document.createElement("div");
+
+      newBlock.className =
+        "portfolio exam-block";
+
+      newBlock.innerHTML = `
+        <div class="container">
+
+          <div class="left">
+            <input
+              type="file"
+              class="examImageInput"
+              accept="image/*"
+            >
+
+            <div
+              class="image-frame examImagePreview">
+            </div>
+
+            <input
+              type="file"
+              class="examFileInput"
+              style="margin-top: 10px;"
+            >
+
+            <div
+              class="examFilePreview"
+              style="font-size: 13px; word-break: break-all;">
+            </div>
+          </div>
+
+          <div class="right">
+            <div class="examFormArea">
+
+              <div class="form-group">
+                <label>Grade:</label>
+
+                <input
+                  type="text"
+                  class="examGrade"
+                >
+              </div>
+
+              <button onclick="submitExam(this)">
+                Submit
+              </button>
+
+            </div>
+
+            <div
+              class="examOutputArea output"
+              style="display: none;">
+            </div>
+          </div>
+
+        </div>
+      `;
+
+      document
+        .getElementById("examBlocks")
+        .appendChild(newBlock);
+
+      bindImageInput(
+        newBlock,
+        ".examImageInput",
+        ".examImagePreview"
+      );
+
+      bindFileInput(
+        newBlock,
+        ".examFileInput",
+        ".examFilePreview"
+      );
+
+      if (data) {
+        restoreBlock(
+          newBlock,
+          data
+        );
+      }
+
+      return newBlock;
+    }
+
+    async function loadSavedBlocks(type) {
+      const savedData =
+        await getSavedData(type);
+
+      if (!savedData.length) {
+        return;
+      }
+
+      let container;
+
+      if (type === "quiz") {
+        container =
+          document.getElementById(
+            "quizBlocks"
+          );
+      }
+
+      if (type === "laboratory") {
+        container =
+          document.getElementById(
+            "laboratoryBlocks"
+          );
+      }
+
+      if (type === "exam") {
+        container =
+          document.getElementById(
+            "examBlocks"
+          );
+      }
+
+      if (!container) {
+        return;
+      }
+
+      container.innerHTML = "";
+
+      savedData.forEach(function(data) {
+        if (type === "quiz") {
+          createQuizBlock(
+            data
+          );
+        } else if (
+          type === "laboratory"
+        ) {
+          createLaboratoryBlock(
+            data
+          );
+        } else if (type === "exam") {
+          createExamBlock(
+            data
+          );
+        }
+      });
+    }
+
+    function submitQuiz(button) {
+      const block =
+        button.closest(".quiz-block");
+
+      const grade =
+        block
+          .querySelector(".quizGrade")
+          .value
+          .trim();
+
+      if (!grade) {
+        alert(
+          "Please enter your quiz grade."
+        );
+        return;
+      }
+
+      const outputArea =
+        block.querySelector(
+          ".quizOutputArea"
+        );
+
+      const formArea =
+        block.querySelector(
+          ".quizFormArea"
+        );
+
+      outputArea.innerHTML = `
+        <h2>Grade Output</h2>
+
+        <p>
+          Your grade:
+          <strong>${escapeHTML(grade)}</strong>
+        </p>
+
+        <button
+          class="output-action"
+          onclick="editQuiz(this)">
+          Edit Grade
+        </button>
+
+        <button
+          class="output-action"
+          onclick="addQuizImage(this)">
+          Add Image
+        </button>
+
+        <button
+          class="output-action"
+          onclick="removeQuiz(this)">
+          Remove
+        </button>
+      `;
+
+      formArea.style.display =
+        "none";
+
+      outputArea.style.display =
+        "block";
+
+      saveCurrentBlock(
+        block
+      );
+    }
+
+    function editQuiz(button) {
+      const block =
+        button.closest(".quiz-block");
+
+      block.querySelector(
+        ".quizFormArea"
+      ).style.display = "block";
+
+      block.querySelector(
+        ".quizOutputArea"
+      ).style.display = "none";
+
+      saveCurrentBlock(
+        block
+      );
+    }
+
+    async function addQuizImage(button) {
+      await saveAllBlocks("quiz");
+
+      const newBlock =
+        createQuizBlock({
+          id:
+            Date.now().toString() +
+            Math.random()
+              .toString(36)
+              .substring(2),
+
+          grade: "",
+
+          image: "",
+
+          submitted: false
+        });
+
+      await saveAllBlocks("quiz");
+
+      newBlock.scrollIntoView({
+        behavior: "smooth",
+        block: "start"
+      });
+    }
+
+    async function removeQuiz(button) {
+      const block =
+        button.closest(".quiz-block");
+
+      const blocks =
+        document.querySelectorAll(
+          ".quiz-block"
+        );
+
+      if (blocks.length === 1) {
+        block.querySelector(
+          ".quizGrade"
+        ).value = "";
+
+        block.querySelector(
+          ".quizImageInput"
+        ).value = "";
+
+        block.querySelector(
+          ".quizImagePreview"
+        ).innerHTML = "";
+
+        block.querySelector(
+          ".quizFileInput"
+        ).value = "";
+
+        block.querySelector(
+          ".quizFilePreview"
+        ).innerHTML = "";
+
+        block.querySelector(
+          ".quizFormArea"
+        ).style.display = "block";
+
+        block.querySelector(
+          ".quizOutputArea"
+        ).style.display = "none";
+
+        try {
+          await window.storage.delete(
+            getStorageKey("quiz"),
+            false
+          );
+        } catch (error) {
+          console.error("Storage error:", error);
+        }
+      } else {
+        const id =
+          block.dataset.storageId;
+
+        const savedData =
+          await getSavedData("quiz");
+
+        const newData =
+          savedData.filter(
+            item => item.id !== id
+          );
+
+        await saveData(
+          "quiz",
+          newData
+        );
+
+        block.remove();
+      }
+    }
+
+    function submitLaboratory(button) {
+      const block =
+        button.closest(
+          ".laboratory-block"
+        );
+
+      const grade =
+        block
+          .querySelector(
+            ".laboratoryGrade"
+          )
+          .value
+          .trim();
+
+      if (!grade) {
+        alert(
+          "Please enter your laboratory grade."
+        );
+        return;
+      }
+
+      const outputArea =
+        block.querySelector(
+          ".laboratoryOutputArea"
+        );
+
+      const formArea =
+        block.querySelector(
+          ".laboratoryFormArea"
+        );
+
+      outputArea.innerHTML = `
+        <h2>Grade Output</h2>
+
+        <p>
+          Your grade:
+          <strong>${escapeHTML(grade)}</strong>
+        </p>
+
+        <button
+          class="output-action"
+          onclick="editLaboratory(this)">
+          Edit Grade
+        </button>
+
+        <button
+          class="output-action"
+          onclick="addLaboratoryImage(this)">
+          Add Image
+        </button>
+
+        <button
+          class="output-action"
+          onclick="removeLaboratory(this)">
+          Remove
+        </button>
+      `;
+
+      formArea.style.display =
+        "none";
+
+      outputArea.style.display =
+        "block";
+
+      saveCurrentBlock(
+        block
+      );
+    }
+
+    function editLaboratory(button) {
+      const block =
+        button.closest(
+          ".laboratory-block"
+        );
+
+      block.querySelector(
+        ".laboratoryFormArea"
+      ).style.display = "block";
+
+      block.querySelector(
+        ".laboratoryOutputArea"
+      ).style.display = "none";
+
+      saveCurrentBlock(
+        block
+      );
+    }
+
+    async function addLaboratoryImage(button) {
+      await saveAllBlocks(
+        "laboratory"
+      );
+
+      const newBlock =
+        createLaboratoryBlock({
+          id:
+            Date.now().toString() +
+            Math.random()
+              .toString(36)
+              .substring(2),
+
+          grade: "",
+
+          image: "",
+
+          submitted: false
+        });
+
+      await saveAllBlocks(
+        "laboratory"
+      );
+
+      newBlock.scrollIntoView({
+        behavior: "smooth",
+        block: "start"
+      });
+    }
+
+    async function removeLaboratory(button) {
+      const block =
+        button.closest(
+          ".laboratory-block"
+        );
+
+      const blocks =
+        document.querySelectorAll(
+          ".laboratory-block"
+        );
+
+      if (blocks.length === 1) {
+        block.querySelector(
+          ".laboratoryGrade"
+        ).value = "";
+
+        block.querySelector(
+          ".laboratoryImageInput"
+        ).value = "";
+
+        block.querySelector(
+          ".laboratoryImagePreview"
+        ).innerHTML = "";
+
+        block.querySelector(
+          ".laboratoryFileInput"
+        ).value = "";
+
+        block.querySelector(
+          ".laboratoryFilePreview"
+        ).innerHTML = "";
+
+        block.querySelector(
+          ".laboratoryFormArea"
+        ).style.display = "block";
+
+        block.querySelector(
+          ".laboratoryOutputArea"
+        ).style.display = "none";
+
+        try {
+          await window.storage.delete(
+            getStorageKey("laboratory"),
+            false
+          );
+        } catch (error) {
+          console.error("Storage error:", error);
+        }
+      } else {
+        const id =
+          block.dataset.storageId;
+
+        const savedData =
+          await getSavedData(
+            "laboratory"
+          );
+
+        const newData =
+          savedData.filter(
+            item => item.id !== id
+          );
+
+        await saveData(
+          "laboratory",
+          newData
+        );
+
+        block.remove();
+      }
+    }
+
+    function submitExam(button) {
+      const block =
+        button.closest(".exam-block");
+
+      const grade =
+        block
+          .querySelector(
+            ".examGrade"
+          )
+          .value
+          .trim();
+
+      if (!grade) {
+        alert(
+          "Please enter your exam grade."
+        );
+        return;
+      }
+
+      const outputArea =
+        block.querySelector(
+          ".examOutputArea"
+        );
+
+      const formArea =
+        block.querySelector(
+          ".examFormArea"
+        );
+
+      outputArea.innerHTML = `
+        <h2>Grade Output</h2>
+
+        <p>
+          Your grade:
+          <strong>${escapeHTML(grade)}</strong>
+        </p>
+
+        <button
+          class="output-action"
+          onclick="editExam(this)">
+          Edit Grade
+        </button>
+
+        <button
+          class="output-action"
+          onclick="addExamImage(this)">
+          Add Image
+        </button>
+
+        <button
+          class="output-action"
+          onclick="removeExam(this)">
+          Remove
+        </button>
+      `;
+
+      formArea.style.display =
+        "none";
+
+      outputArea.style.display =
+        "block";
+
+      saveCurrentBlock(
+        block
+      );
+    }
+
+    function editExam(button) {
+      const block =
+        button.closest(
+          ".exam-block"
+        );
+
+      block.querySelector(
+        ".examFormArea"
+      ).style.display = "block";
+
+      block.querySelector(
+        ".examOutputArea"
+      ).style.display = "none";
+
+      saveCurrentBlock(
+        block
+      );
+    }
+
+    async function addExamImage(button) {
+      await saveAllBlocks("exam");
+
+      const newBlock =
+        createExamBlock({
+          id:
+            Date.now().toString() +
+            Math.random()
+              .toString(36)
+              .substring(2),
+
+          grade: "",
+
+          image: "",
+
+          submitted: false
+        });
+
+      await saveAllBlocks("exam");
+
+      newBlock.scrollIntoView({
+        behavior: "smooth",
+        block: "start"
+      });
+    }
+
+    async function removeExam(button) {
+      const block =
+        button.closest(
+          ".exam-block"
+        );
+
+      const blocks =
+        document.querySelectorAll(
+          ".exam-block"
+        );
+
+      if (blocks.length === 1) {
+        block.querySelector(
+          ".examGrade"
+        ).value = "";
+
+        block.querySelector(
+          ".examImageInput"
+        ).value = "";
+
+        block.querySelector(
+          ".examImagePreview"
+        ).innerHTML = "";
+
+        block.querySelector(
+          ".examFileInput"
+        ).value = "";
+
+        block.querySelector(
+          ".examFilePreview"
+        ).innerHTML = "";
+
+        block.querySelector(
+          ".examFormArea"
+        ).style.display = "block";
+
+        block.querySelector(
+          ".examOutputArea"
+        ).style.display = "none";
+
+        try {
+          await window.storage.delete(
+            getStorageKey("exam"),
+            false
+          );
+        } catch (error) {
+          console.error("Storage error:", error);
+        }
+      } else {
+        const id =
+          block.dataset.storageId;
+
+        const savedData =
+          await getSavedData("exam");
+
+        const newData =
+          savedData.filter(
+            item => item.id !== id
+          );
+
+        await saveData(
+          "exam",
+          newData
+        );
+
+        block.remove();
+      }
+    }
+
+    document
+      .querySelectorAll(".quiz-block")
+      .forEach(function(block) {
+        bindImageInput(
+          block,
+          ".quizImageInput",
+          ".quizImagePreview"
+        );
+
+        bindFileInput(
+          block,
+          ".quizFileInput",
+          ".quizFilePreview"
+        );
+      });
+
+    document
+      .querySelectorAll(
+        ".laboratory-block"
+      )
+      .forEach(function(block) {
+        bindImageInput(
+          block,
+          ".laboratoryImageInput",
+          ".laboratoryImagePreview"
+        );
+
+        bindFileInput(
+          block,
+          ".laboratoryFileInput",
+          ".laboratoryFilePreview"
+        );
+      });
+
+    document
+      .querySelectorAll(".exam-block")
+      .forEach(function(block) {
+        bindImageInput(
+          block,
+          ".examImageInput",
+          ".examImagePreview"
+        );
+
+        bindFileInput(
+          block,
+          ".examFileInput",
+          ".examFilePreview"
+        );
+      });
+
+    window.addEventListener(
+      "load",
+      async function() {
+        await loadHomeData();
+
+        await loadSavedBlocks(
+          "quiz"
+        );
+
+        await loadSavedBlocks(
+          "laboratory"
+        );
+
+        await loadSavedBlocks(
           "exam"
         );
       }
